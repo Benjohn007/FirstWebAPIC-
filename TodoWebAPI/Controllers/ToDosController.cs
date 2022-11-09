@@ -16,23 +16,50 @@ namespace TodoWebAPI.Controllers
             this.dbContext = dbContext;
         }
 
+        //[HttpGet]
+        //public async Task<IActionResult> GetAllToDos()
+        //{
+        //    return Ok(await dbContext.ToDoAPIs.ToListAsync());
+        //}
+
+
         [HttpGet]
-        public async Task<IActionResult> GetToDos()
+        public async Task<IActionResult> GetToDos([FromQuery] PaginationFilter filter)
         {
-            return Ok(await dbContext.ToDoAPIs.ToListAsync());
+            var validFilter = new PaginationFilter(filter.PageNumber, filter.PageSize);
+            var pagedData = await dbContext.ToDoAPIs
+                .Skip((validFilter.PageNumber - 1) * validFilter.PageSize)
+                .Take(validFilter.PageSize)
+                .ToListAsync();
+            var totalRecords = await dbContext.ToDoAPIs.CountAsync();
+            return Ok(new PagedResponse<List<ToDoAPI>>(pagedData, validFilter.PageNumber, validFilter.PageSize));
         }
+
+
+        //[HttpGet]
+        //[Route("{id:guid}")]
+        //public async Task<IActionResult> GetTodo([FromRoute] Guid id)
+        //{
+        //    var todo = await dbContext.ToDoAPIs.FindAsync(id);
+        //    if(todo == null)
+        //    {
+        //        return NotFound();
+        //    }
+        //    return Ok(todo);
+        //}
 
         [HttpGet]
         [Route("{id:guid}")]
         public async Task<IActionResult> GetTodo([FromRoute] Guid id)
         {
             var todo = await dbContext.ToDoAPIs.FindAsync(id);
-            if(todo == null)
+            if (todo == null)
             {
                 return NotFound();
             }
-            return Ok(todo);
+            return Ok(new Response<ToDoAPI>(todo));
         }
+
         [HttpPost]
         public async Task<IActionResult> AddToDos(AddToDoRequest addToDoRequest)
         {
